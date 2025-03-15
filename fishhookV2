@@ -1,132 +1,1251 @@
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "Fish V2 Recode (outdated)";
-                Text = "BEAM SKIDS";
+--[[
+    RobloxUI Library
+    A lightweight UI library for Roblox exploits using the drawing API
+    
+    Features:
+    - Window creation with draggable functionality
+    - Buttons, toggles, sliders, dropdowns, and text inputs
+    - Color customization
+    - Clean, modern design
+]]
+
+local RobloxUI = {}
+RobloxUI.__index = RobloxUI
+
+-- Default theme colors
+RobloxUI.Colors = {
+    Background = Color3.fromRGB(30, 30, 30),
+    Accent = Color3.fromRGB(0, 120, 215),
+    Text = Color3.fromRGB(255, 255, 255),
+    Border = Color3.fromRGB(60, 60, 60),
+    Button = Color3.fromRGB(40, 40, 40),
+    ButtonHover = Color3.fromRGB(50, 50, 50),
+    Toggle = Color3.fromRGB(40, 40, 40),
+    ToggleEnabled = Color3.fromRGB(0, 120, 215),
+    SliderBackground = Color3.fromRGB(40, 40, 40),
+    SliderFill = Color3.fromRGB(0, 120, 215)
+}
+
+-- Utility functions
+local function isInBounds(x, y, minX, minY, maxX, maxY)
+    return x >= minX and x <= maxX and y >= minY and y <= maxY
+end
+
+function RobloxUI.new(title, position, size)
+    local self = setmetatable({}, RobloxUI)
+    
+    self.title = title or "RobloxUI"
+    self.position = position or Vector2.new(200, 200)
+    self.size = size or Vector2.new(400, 300)
+    self.visible = true
+    self.dragging = false
+    self.dragOffset = Vector2.new(0, 0)
+    self.elements = {}
+    self.connections = {}
+    self.elementY = 40 -- Starting Y position for elements
+    self.padding = 10
+    
+    -- Create window
+    self:createWindow()
+    
+    -- Setup input connections
+    self:setupConnections()
+    
+    return self
+end
+
+function RobloxUI:createWindow()
+    -- Main window background
+    self.background = Drawing.new("Square")
+    self.background.Size = self.size
+    self.background.Position = self.position
+    self.background.Color = self.Colors.Background
+    self.background.Filled = true
+    self.background.Transparency = 0.9
+    self.background.Visible = self.visible
+    
+    -- Window border
+    self.border = Drawing.new("Square")
+    self.border.Size = self.size
+    self.border.Position = self.position
+    self.border.Color = self.Colors.Border
+    self.border.Thickness = 1
+    self.border.Filled = false
+    self.border.Transparency = 1
+    self.border.Visible = self.visible
+    
+    -- Title bar
+    self.titleBar = Drawing.new("Square")
+    self.titleBar.Size = Vector2.new(self.size.X, 30)
+    self.titleBar.Position = self.position
+    self.titleBar.Color = self.Colors.Accent
+    self.titleBar.Filled = true
+    self.titleBar.Transparency = 1
+    self.titleBar.Visible = self.visible
+    
+    -- Title text
+    self.titleText = Drawing.new("Text")
+    self.titleText.Text = self.title
+    self.titleText.Position = Vector2.new(self.position.X + 10, self.position.Y + 8)
+    self.titleText.Color = self.Colors.Text
+    self.titleText.Size = 16
+    self.titleText.Center = false
+    self.titleText.Outline = false
+    self.titleText.Visible = self.visible
+    
+    -- Close button
+    self.closeButton = Drawing.new("Square")
+    self.closeButton.Size = Vector2.new(16, 16)
+    self.closeButton.Position = Vector2.new(self.position.X + self.size.X - 26, self.position.Y + 7)
+    self.closeButton.Color = Color3.fromRGB(255, 70, 70)
+    self.closeButton.Filled = true
+    self.closeButton.Transparency = 1
+    self.closeButton.Visible = self.visible
+    
+    -- X in close button
+    self.closeX = Drawing.new("Text")
+    self.closeX.Text = "×"
+    self.closeX.Position = Vector2.new(self.position.X + self.size.X - 24, self.position.Y + 4)
+    self.closeX.Color = self.Colors.Text
+    self.closeX.Size = 16
+    self.closeX.Center = false
+    self.closeX.Outline = false
+    self.closeX.Visible = self.visible
+    
+    -- Add to elements for cleanup
+    table.insert(self.elements, self.background)
+    table.insert(self.elements, self.border)
+    table.insert(self.elements, self.titleBar)
+    table.insert(self.elements, self.titleText)
+    table.insert(self.elements, self.closeButton)
+    table.insert(self.elements, self.closeX)
+end
+
+function RobloxUI:setupConnections()
+    -- Mouse input for dragging and buttons
+    local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+    
+    -- Input began connection
+    table.insert(self.connections, game:GetService("UserInputService").InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mousePos = Vector2.new(mouse.X, mouse.Y)
             
-            })
-                    local CC = game:GetService"Workspace".CurrentCamera
-                local Plr
-                local enabled = false
-                local accomidationfactor = 0.12241
-                local mouse = game.Players.LocalPlayer:GetMouse()
-                local placemarker = Instance.new("Part", game.Workspace)
-                local guimain = Instance.new("Folder", game.CoreGui)
+            -- Check for close button press
+            if isInBounds(mousePos.X, mousePos.Y, 
+                self.closeButton.Position.X, self.closeButton.Position.Y, 
+                self.closeButton.Position.X + self.closeButton.Size.X, 
+                self.closeButton.Position.Y + self.closeButton.Size.Y) and self.visible then
+                self:destroy()
+                return
+            end
             
-                function makemarker(Parent, Adornee, Color, Size)
-                    local e = Instance.new("BillboardGui", Parent)
-                    e.Name = "PP"
-                    e.Adornee = Adornee
-                    e.Size = UDim2.new(Size, Size2, Size, Size2)
-                    e.AlwaysOnTop = true
-                    local a = Instance.new("Frame", e)
-                    a.Size = UDim2.new(4, 0, 4, 0)
-                    a.BackgroundTransparency = 0.4
-                    a.BackgroundColor3 = Color
-                    local g = Instance.new("UICorner", a)
-                    g.CornerRadius = UDim.new(0, 0)
-                    return(e)
+            -- Check for title bar drag
+            if isInBounds(mousePos.X, mousePos.Y, 
+                self.titleBar.Position.X, self.titleBar.Position.Y, 
+                self.titleBar.Position.X + self.titleBar.Size.X, 
+                self.titleBar.Position.Y + self.titleBar.Size.Y) and self.visible then
+                self.dragging = true
+                self.dragOffset = mousePos - self.position
+            end
+            
+            -- Check for element clicks
+            for _, element in pairs(self.elements) do
+                if element.onClick and element.isInBounds and element:isInBounds(mousePos) and self.visible then
+                    element:onClick()
                 end
+            end
+        end
+    end))
+    
+    -- Input ended connection
+    table.insert(self.connections, game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            self.dragging = false
+        end
+    end))
+    
+    -- Dragging connection
+    table.insert(self.connections, game:GetService("RunService").RenderStepped:Connect(function()
+        if self.dragging and self.visible then
+            local mousePos = Vector2.new(mouse.X, mouse.Y)
+            self:setPosition(mousePos - self.dragOffset)
+        end
+    end))
+end
+
+function RobloxUI:setPosition(position)
+    local offset = position - self.position
+    self.position = position
+    
+    self.background.Position = self.position
+    self.border.Position = self.position
+    self.titleBar.Position = self.position
+    self.titleText.Position = Vector2.new(self.position.X + 10, self.position.Y + 8)
+    self.closeButton.Position = Vector2.new(self.position.X + self.size.X - 26, self.position.Y + 7)
+    self.closeX.Position = Vector2.new(self.position.X + self.size.X - 24, self.position.Y + 4)
+    
+    -- Update positions of all elements
+    for _, element in pairs(self.elements) do
+        if element.updatePosition then
+            element:updatePosition(offset)
+        end
+    end
+end
+
+function RobloxUI:setVisible(visible)
+    self.visible = visible
+    
+    for _, element in pairs(self.elements) do
+        element.Visible = visible
+    end
+end
+
+function RobloxUI:addButton(text, callback)
+    local buttonHeight = 30
+    local width = self.size.X - (self.padding * 2)
+    local position = Vector2.new(self.position.X + self.padding, self.position.Y + self.elementY)
+    
+    local button = {}
+    button.callback = callback or function() end
+    
+    -- Button background
+    button.background = Drawing.new("Square")
+    button.background.Size = Vector2.new(width, buttonHeight)
+    button.background.Position = position
+    button.background.Color = self.Colors.Button
+    button.background.Filled = true
+    button.background.Transparency = 0.9
+    button.background.Visible = self.visible
+    
+    -- Button text
+    button.text = Drawing.new("Text")
+    button.text.Text = text
+    button.text.Position = Vector2.new(position.X + (width / 2), position.Y + (buttonHeight / 2) - 8)
+    button.text.Color = self.Colors.Text
+    button.text.Size = 16
+    button.text.Center = true
+    button.text.Outline = false
+    button.text.Visible = self.visible
+    
+    -- Click functionality
+    button.isInBounds = function(self, mousePos)
+        return isInBounds(mousePos.X, mousePos.Y, 
+            self.background.Position.X, self.background.Position.Y, 
+            self.background.Position.X + self.background.Size.X, 
+            self.background.Position.Y + self.background.Size.Y)
+    end
+    
+    button.onClick = function(self)
+        self.background.Color = self.Colors.ButtonHover
+        task.delay(0.1, function()
+            self.background.Color = self.Colors.Button
+        end)
+        self.callback()
+    end
+    
+    button.updatePosition = function(self, offset)
+        self.background.Position = self.background.Position + offset
+        self.text.Position = self.text.Position + offset
+    end
+    
+    -- Add to elements
+    table.insert(self.elements, button.background)
+    table.insert(self.elements, button.text)
+    table.insert(self.elements, button)
+    
+    self.elementY = self.elementY + buttonHeight + 5
+    return button
+end
+
+function RobloxUI:addToggle(text, default, callback)
+    local toggleHeight = 30
+    local width = self.size.X - (self.padding * 2)
+    local position = Vector2.new(self.position.X + self.padding, self.position.Y + self.elementY)
+    
+    local toggle = {}
+    toggle.value = default or false
+    toggle.callback = callback or function() end
+    
+    -- Toggle background
+    toggle.background = Drawing.new("Square")
+    toggle.background.Size = Vector2.new(width, toggleHeight)
+    toggle.background.Position = position
+    toggle.background.Color = self.Colors.Button
+    toggle.background.Filled = true
+    toggle.background.Transparency = 0.9
+    toggle.background.Visible = self.visible
+    
+    -- Toggle text
+    toggle.text = Drawing.new("Text")
+    toggle.text.Text = text
+    toggle.text.Position = Vector2.new(position.X + 10, position.Y + (toggleHeight / 2) - 8)
+    toggle.text.Color = self.Colors.Text
+    toggle.text.Size = 16
+    toggle.text.Center = false
+    toggle.text.Outline = false
+    toggle.text.Visible = self.visible
+    
+    -- Toggle switch background
+    toggle.switch = Drawing.new("Square")
+    toggle.switch.Size = Vector2.new(40, 20)
+    toggle.switch.Position = Vector2.new(position.X + width - 50, position.Y + 5)
+    toggle.switch.Color = self.Colors.Toggle
+    toggle.switch.Filled = true
+    toggle.switch.Transparency = 0.9
+    toggle.switch.Visible = self.visible
+    
+    -- Toggle indicator
+    toggle.indicator = Drawing.new("Square")
+    toggle.indicator.Size = Vector2.new(16, 16)
+    local indicatorX = toggle.value and toggle.switch.Position.X + 22 or toggle.switch.Position.X + 2
+    toggle.indicator.Position = Vector2.new(indicatorX, toggle.switch.Position.Y + 2)
+    toggle.indicator.Color = toggle.value and self.Colors.ToggleEnabled or self.Colors.Text
+    toggle.indicator.Filled = true
+    toggle.indicator.Transparency = 0.9
+    toggle.indicator.Visible = self.visible
+    
+    -- Update toggle state
+    toggle.setState = function(self, value)
+        self.value = value
+        self.switch.Color = self.value and RobloxUI.Colors.ToggleEnabled or RobloxUI.Colors.Toggle
+        self.indicator.Position = Vector2.new(
+            self.value and self.switch.Position.X + 22 or self.switch.Position.X + 2,
+            self.indicator.Position.Y
+        )
+        self.indicator.Color = self.value and RobloxUI.Colors.Text or RobloxUI.Colors.Text
+        self.callback(self.value)
+    end
+    
+    -- Click functionality
+    toggle.isInBounds = function(self, mousePos)
+        return isInBounds(mousePos.X, mousePos.Y, 
+            self.background.Position.X, self.background.Position.Y, 
+            self.background.Position.X + self.background.Size.X, 
+            self.background.Position.Y + self.background.Size.Y)
+    end
+    
+    toggle.onClick = function(self)
+        self:setState(not self.value)
+    end
+    
+    toggle.updatePosition = function(self, offset)
+        self.background.Position = self.background.Position + offset
+        self.text.Position = self.text.Position + offset
+        self.switch.Position = self.switch.Position + offset
+        self.indicator.Position = self.indicator.Position + offset
+    end
+    
+    -- Set initial state
+    toggle:setState(toggle.value)
+    
+    -- Add to elements
+    table.insert(self.elements, toggle.background)
+    table.insert(self.elements, toggle.text)
+    table.insert(self.elements, toggle.switch)
+    table.insert(self.elements, toggle.indicator)
+    table.insert(self.elements, toggle)
+    
+    self.elementY = self.elementY + toggleHeight + 5
+    return toggle
+end
+
+function RobloxUI:addSlider(text, min, max, default, callback)
+    local sliderHeight = 50
+    local width = self.size.X - (self.padding * 2)
+    local position = Vector2.new(self.position.X + self.padding, self.position.Y + self.elementY)
+    
+    local slider = {}
+    slider.min = min or 0
+    slider.max = max or 100
+    slider.value = default or slider.min
+    slider.callback = callback or function() end
+    slider.dragging = false
+    
+    -- Ensure value is within range
+    slider.value = math.clamp(slider.value, slider.min, slider.max)
+    
+    -- Slider background
+    slider.background = Drawing.new("Square")
+    slider.background.Size = Vector2.new(width, sliderHeight)
+    slider.background.Position = position
+    slider.background.Color = self.Colors.Button
+    slider.background.Filled = true
+    slider.background.Transparency = 0.9
+    slider.background.Visible = self.visible
+    
+    -- Slider text
+    slider.text = Drawing.new("Text")
+    slider.text.Text = text
+    slider.text.Position = Vector2.new(position.X + 10, position.Y + 8)
+    slider.text.Color = self.Colors.Text
+    slider.text.Size = 16
+    slider.text.Center = false
+    slider.text.Outline = false
+    slider.text.Visible = self.visible
+    
+    -- Slider bar background
+    slider.bar = Drawing.new("Square")
+    slider.bar.Size = Vector2.new(width - 20, 10)
+    slider.bar.Position = Vector2.new(position.X + 10, position.Y + 30)
+    slider.bar.Color = self.Colors.SliderBackground
+    slider.bar.Filled = true
+    slider.bar.Transparency = 0.9
+    slider.bar.Visible = self.visible
+    
+    -- Slider value text
+    slider.valueText = Drawing.new("Text")
+    slider.valueText.Text = tostring(slider.value)
+    slider.valueText.Position = Vector2.new(position.X + width - 30, position.Y + 8)
+    slider.valueText.Color = self.Colors.Text
+    slider.valueText.Size = 16
+    slider.valueText.Center = true
+    slider.valueText.Outline = false
+    slider.valueText.Visible = self.visible
+    
+    -- Calculate fill width based on value
+    local fillWidth = ((slider.value - slider.min) / (slider.max - slider.min)) * (width - 20)
+    
+    -- Slider fill
+    slider.fill = Drawing.new("Square")
+    slider.fill.Size = Vector2.new(fillWidth, 10)
+    slider.fill.Position = Vector2.new(position.X + 10, position.Y + 30)
+    slider.fill.Color = self.Colors.SliderFill
+    slider.fill.Filled = true
+    slider.fill.Transparency = 0.9
+    slider.fill.Visible = self.visible
+    
+    -- Slider handle
+    slider.handle = Drawing.new("Square")
+    slider.handle.Size = Vector2.new(10, 16)
+    slider.handle.Position = Vector2.new(position.X + 10 + fillWidth - 5, position.Y + 27)
+    slider.handle.Color = self.Colors.Text
+    slider.handle.Filled = true
+    slider.handle.Transparency = 0.9
+    slider.handle.Visible = self.visible
+    
+    -- Update slider value
+    slider.setValue = function(self, value)
+        self.value = math.clamp(value, self.min, self.max)
+        self.valueText.Text = tostring(math.floor(self.value))
+        
+        local fillWidth = ((self.value - self.min) / (self.max - self.min)) * (width - 20)
+        self.fill.Size = Vector2.new(fillWidth, 10)
+        self.handle.Position = Vector2.new(position.X + 10 + fillWidth - 5, self.handle.Position.Y)
+        
+        self.callback(self.value)
+    end
+    
+    -- Click functionality
+    slider.isInBounds = function(self, mousePos)
+        return isInBounds(mousePos.X, mousePos.Y, 
+            self.background.Position.X, self.background.Position.Y, 
+            self.background.Position.X + self.background.Size.X, 
+            self.background.Position.Y + self.background.Size.Y)
+    end
+    
+    slider.onClick = function(self)
+        self.dragging = true
+        
+        -- Add dragging connection
+        local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+        
+        local dragConnection = game:GetService("RunService").RenderStepped:Connect(function()
+            if self.dragging then
+                local mousePos = Vector2.new(mouse.X, mouse.Y)
+                local relativeX = math.clamp(mousePos.X - self.bar.Position.X, 0, self.bar.Size.X)
+                local value = self.min + ((relativeX / self.bar.Size.X) * (self.max - self.min))
+                self:setValue(value)
+            end
+        end)
+        
+        -- Remove connection when mouse button is released
+        local releaseConnection = game:GetService("UserInputService").InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                self.dragging = false
+                dragConnection:Disconnect()
+                releaseConnection:Disconnect()
+            end
+        end)
+    end
+    
+    slider.updatePosition = function(self, offset)
+        self.background.Position = self.background.Position + offset
+        self.text.Position = self.text.Position + offset
+        self.bar.Position = self.bar.Position + offset
+        self.valueText.Position = self.valueText.Position + offset
+        self.fill.Position = self.fill.Position + offset
+        self.handle.Position = self.handle.Position + offset
+    end
+    
+    -- Set initial state
+    slider:setValue(slider.value)
+    
+    -- Add to elements
+    table.insert(self.elements, slider.background)
+    table.insert(self.elements, slider.text)
+    table.insert(self.elements, slider.bar)
+    table.insert(self.elements, slider.valueText)
+    table.insert(self.elements, slider.fill)
+    table.insert(self.elements, slider.handle)
+    table.insert(self.elements, slider)
+    
+    self.elementY = self.elementY + sliderHeight + 5
+    return slider
+end
+
+function RobloxUI:addDropdown(text, options, default, callback)
+    local dropdownHeight = 30
+    local width = self.size.X - (self.padding * 2)
+    local position = Vector2.new(self.position.X + self.padding, self.position.Y + self.elementY)
+    
+    local dropdown = {}
+    dropdown.options = options or {}
+    dropdown.selectedOption = default or (options[1] or "")
+    dropdown.callback = callback or function() end
+    dropdown.open = false
+    
+    -- Dropdown background
+    dropdown.background = Drawing.new("Square")
+    dropdown.background.Size = Vector2.new(width, dropdownHeight)
+    dropdown.background.Position = position
+    dropdown.background.Color = self.Colors.Button
+    dropdown.background.Filled = true
+    dropdown.background.Transparency = 0.9
+    dropdown.background.Visible = self.visible
+    
+    -- Dropdown text
+    dropdown.text = Drawing.new("Text")
+    dropdown.text.Text = text
+    dropdown.text.Position = Vector2.new(position.X + 10, position.Y + (dropdownHeight / 2) - 8)
+    dropdown.text.Color = self.Colors.Text
+    dropdown.text.Size = 16
+    dropdown.text.Center = false
+    dropdown.text.Outline = false
+    dropdown.text.Visible = self.visible
+    
+    -- Dropdown current value
+    dropdown.value = Drawing.new("Text")
+    dropdown.value.Text = dropdown.selectedOption
+    dropdown.value.Position = Vector2.new(position.X + width - 30, position.Y + (dropdownHeight / 2) - 8)
+    dropdown.value.Color = self.Colors.Text
+    dropdown.value.Size = 16
+    dropdown.value.Center = true
+    dropdown.value.Outline = false
+    dropdown.value.Visible = self.visible
+    
+    -- Dropdown arrow
+    dropdown.arrow = Drawing.new("Text")
+    dropdown.arrow.Text = "▼"
+    dropdown.arrow.Position = Vector2.new(position.X + width - 15, position.Y + (dropdownHeight / 2) - 8)
+    dropdown.arrow.Color = self.Colors.Text
+    dropdown.arrow.Size = 16
+    dropdown.arrow.Center = true
+    dropdown.arrow.Outline = false
+    dropdown.arrow.Visible = self.visible
+    
+    -- Dropdown menu container
+    dropdown.menu = Drawing.new("Square")
+    dropdown.menu.Size = Vector2.new(width, #dropdown.options * dropdownHeight)
+    dropdown.menu.Position = Vector2.new(position.X, position.Y + dropdownHeight)
+    dropdown.menu.Color = self.Colors.Button
+    dropdown.menu.Filled = true
+    dropdown.menu.Transparency = 0.9
+    dropdown.menu.Visible = false
+    
+    -- Dropdown menu options
+    dropdown.optionElements = {}
+    
+    for i, option in ipairs(dropdown.options) do
+        local optionBg = Drawing.new("Square")
+        optionBg.Size = Vector2.new(width, dropdownHeight)
+        optionBg.Position = Vector2.new(position.X, position.Y + dropdownHeight + (i-1) * dropdownHeight)
+        optionBg.Color = self.Colors.Button
+        optionBg.Filled = true
+        optionBg.Transparency = 0.9
+        optionBg.Visible = false
+        
+        local optionText = Drawing.new("Text")
+        optionText.Text = option
+        optionText.Position = Vector2.new(position.X + 10, position.Y + dropdownHeight + (i-1) * dropdownHeight + (dropdownHeight / 2) - 8)
+        optionText.Color = self.Colors.Text
+        optionText.Size = 16
+        optionText.Center = false
+        optionText.Outline = false
+        optionText.Visible = false
+        
+        table.insert(dropdown.optionElements, {bg = optionBg, text = optionText, value = option})
+        table.insert(self.elements, optionBg)
+        table.insert(self.elements, optionText)
+    end
+    
+    -- Update dropdown state
+    dropdown.setSelectedOption = function(self, option)
+        if table.find(self.options, option) then
+            self.selectedOption = option
+            self.value.Text = option
+            self.callback(option)
+        end
+    end
+    
+    dropdown.toggleMenu = function(self)
+        self.open = not self.open
+        self.arrow.Text = self.open and "▲" or "▼"
+        self.menu.Visible = self.open and self.visible
+        
+        for _, element in ipairs(self.optionElements) do
+            element.bg.Visible = self.open and self.visible
+            element.text.Visible = self.open and self.visible
+        end
+    end
+    
+    -- Click functionality
+    dropdown.isInBounds = function(self, mousePos)
+        if self.open then
+            return isInBounds(mousePos.X, mousePos.Y, 
+                self.background.Position.X, self.background.Position.Y, 
+                self.background.Position.X + self.background.Size.X, 
+                self.background.Position.Y + self.background.Size.Y + self.menu.Size.Y)
+        else
+            return isInBounds(mousePos.X, mousePos.Y, 
+                self.background.Position.X, self.background.Position.Y, 
+                self.background.Position.X + self.background.Size.X, 
+                self.background.Position.Y + self.background.Size.Y)
+        end
+    end
+    
+    dropdown.onClick = function(self)
+        local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+        local mousePos = Vector2.new(mouse.X, mouse.Y)
+        
+        if self.open then
+            -- Check if clicking an option
+            for _, element in ipairs(self.optionElements) do
+                if isInBounds(mousePos.X, mousePos.Y, 
+                    element.bg.Position.X, element.bg.Position.Y, 
+                    element.bg.Position.X + element.bg.Size.X, 
+                    element.bg.Position.Y + element.bg.Size.Y) then
+                    self:setSelectedOption(element.value)
+                    self:toggleMenu()
+                    return
+                end
+            end
+        end
+        
+        -- Toggle menu if clicking the dropdown itself
+        if isInBounds(mousePos.X, mousePos.Y, 
+            self.background.Position.X, self.background.Position.Y, 
+            self.background.Position.X + self.background.Size.X, 
+            self.background.Position.Y + self.background.Size.Y) then
+            self:toggleMenu()
+        end
+    end
+    
+    dropdown.updatePosition = function(self, offset)
+        self.background.Position = self.background.Position + offset
+        self.text.Position = self.text.Position + offset
+        self.value.Position = self.value.Position + offset
+        self.arrow.Position = self.arrow.Position + offset
+        self.menu.Position = self.menu.Position + offset
+        
+        for _, element in ipairs(self.optionElements) do
+            element.bg.Position = element.bg.Position + offset
+            element.text.Position = element.text.Position + offset
+        end
+    end
+    
+    -- Add to elements
+    table.insert(self.elements, dropdown.background)
+    table.insert(self.elements, dropdown.text)
+    table.insert(self.elements, dropdown.value)
+    table.insert(self.elements, dropdown.arrow)
+    table.insert(self.elements, dropdown.menu)
+    table.insert(self.elements, dropdown)
+    
+    self.elementY = self.elementY + dropdownHeight + 5
+    return dropdown
+end
+
+function RobloxUI:addTextbox(text, default, callback)
+    local textboxHeight = 30
+    local width = self.size.X - (self.padding * 2)
+    local position = Vector2.new(self.position.X + self.padding, self.position.Y + self.elementY)
+    
+    local textbox = {}
+    textbox.value = default or ""
+    textbox.callback = callback or function() end
+    textbox.focused = false
+    
+    -- Textbox background
+    textbox.background = Drawing.new("Square")
+    textbox.background.Size = Vector2.new(width, textboxHeight)
+    textbox.background.Position = position
+    textbox.background.Color = self.Colors.Button
+    textbox.background.Filled = true
+    textbox.background.Transparency = 0.9
+    textbox.background.Visible = self.visible
+    
+    -- Textbox label
+    textbox.label = Drawing.new("Text")
+    textbox.label.Text = text
+    textbox.label.Position = Vector2.new(position.X + 10, position.Y + (textboxHeight / 2) - 8)
+    textbox.label.Color = self.Colors.Text
+    textbox.label.Size = 16
+    textbox.label.Center = false
+    textbox.label.Outline = false
+    textbox.label.Visible = self.visible
+    
+    -- Textbox input field
+    textbox.field = Drawing.new("Square")
+    textbox.field.Size = Vector2.new(width / 2, textboxHeight - 10)
+    textbox.field.Position = Vector2.new(position.X + width / 2, position.Y + 5)
+    textbox.field.Color = Color3.fromRGB(20, 20, 20)
+    textbox.field.Filled = true
+    textbox.field.Transparency = 0.9
+    textbox.field.Visible = self.visible
+    
+    -- Textbox text
+    textbox.text = Drawing.new("Text")
+    textbox.text.Text = textbox.value
+    textbox.text.Position = Vector2.new(position.X + width / 2 + 5, position.Y + (textboxHeight / 2) - 8)
+    textbox.text.Color = self.Colors.Text
+    textbox.text.Size = 16
+    textbox.text.Center = false
+    textbox.text.Outline = false
+    textbox.text.Visible = self.visible
+    
+    -- Cursor
+    textbox.cursor = Drawing.new("Square")
+    textbox.cursor.Size = Vector2.new(1, textboxHeight - 14)
+    textbox.cursor.Position = Vector2.new(position.X + width / 2 + 5 + game:GetService("TextService"):GetTextSize(textbox.value, 16, Enum.Font.Code, Vector2.new(math.huge, math.huge)).X, position.Y + 7)
+    textbox.cursor.Color = self.Colors.Text
+    textbox.cursor.Filled = true
+    textbox.cursor.Transparency = 0
+    textbox.cursor.Visible = false
+    
+    -- Update textbox value
+    textbox.setValue = function(self, value)
+        self.value = value
+        self.text.Text = value
+        self.cursor.Position = Vector2.new(position.X + width / 2 + 5 + game:GetService("TextService"):GetTextSize(value, 16, Enum.Font.Code, Vector2.new(math.huge, math.huge)).X, position.Y + 7)
+        self.callback(value)
+    end
+    
+    -- Handle focus
+    textbox.setFocus = function(self, focused)
+        self.focused = focused
+        self.field.Color = focused and Color3.fromRGB(30, 30, 30) or Color3.fromRGB(20, 20, 20)
+        self.cursor.Visible = focused and self.visible
+        
+        if focused then
+            -- Cursor blink effect
+            spawn(function()
+                while self.focused do
+                    self.cursor.Transparency = 1
+                    wait(0.5)
+                    self.cursor.Transparency = 0
+                    wait(0.5)
+                end
+                self.cursor.Transparency = 0
+            end)
             
-                local data = game.Players:GetPlayers()
-                function noob(player)
-                    local character
-                    repeat wait() until player.Character
-                    local handler = makemarker(guimain, player.Character:WaitForChild("HumanoidRootPart"), Color3.fromRGB(0), 0.0, 0)
-                    handler.Name = player.Name
-                    player.CharacterAdded:connect(function(Char) handler.Adornee = Char:WaitForChild("HumanoidRootPart") end)
-            
-                    local TextLabel = Instance.new("TextLabel", handler)
-                    TextLabel.BackgroundTransparency = 1
-                    TextLabel.Position = UDim2.new(0, 0, 0, -50)
-                    TextLabel.Size = UDim2.new(0, 0, 0, 0)
-                    TextLabel.Font = Enum.Font.SourceSansSemibold
-                    TextLabel.TextSize = 14
-                    TextLabel.TextColor3 = Color3.new(1, 1, 1)
-                    TextLabel.TextStrokeTransparency = 0
-                    TextLabel.TextYAlignment = Enum.TextYAlignment.Bottom
-                    TextLabel.Text = "Name: "..player.Name
-                    TextLabel.ZIndex = 10
-            
-                    spawn(function()
-                        while wait() do
-                            if player.Character then
-                                TextLabel.Text = player.Name.." | Bounty: "..tostring(player:WaitForChild("leaderstats").Wanted.Value).." | "..tostring(math.floor(player.Character:WaitForChild("Humanoid").Health))
+            -- Setup input connection
+            self.inputConnection = game:GetService("UserInputService").InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    local key = input.KeyCode
+                    local keyString = string.char(key.Value)
+                    
+                    -- Handle backspace
+                    if key == Enum.KeyCode.Backspace then
+                        if #self.value > 0 then
+                            self:setValue(self.value:sub(1, -2))
+                        end
+                        return
+                    end
+                    
+                    -- Handle return/enter (unfocus)
+                    if key == Enum.KeyCode.Return then
+                        self:setFocus(false)
+                        return
+                    end
+                    
+                    -- Only handle printable characters
+                    if key.Value >= 32 and key.Value <= 126 then
+                        -- Handle shift + key for uppercase or special characters
+                        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) or game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.RightShift) then
+                            -- Map to shifted values
+                            local shiftMapping = {
+                                ["`"] = "~", ["1"] = "!", ["2"] = "@", ["3"] = "#", ["4"] = "$", ["5"] = "%",
+                                ["6"] = "^", ["7"] = "&", ["8"] = "*", ["9"] = "(", ["0"] = ")", ["-"] = "_",
+                                ["="] = "+", ["["] = "{", ["]"] = "}", ["\\"] = "|", [";"] = ":", ["'"] = "\"",
+                                [","] = "<", ["."] = ">", ["/"] = "?"
+                            }
+                            
+                            if shiftMapping[keyString] then
+                                keyString = shiftMapping[keyString]
+                            else
+                                keyString = keyString:upper()
                             end
                         end
-                    end)
-                end
-            
-                for i = 1, #data do
-                    if data[i] ~= game.Players.LocalPlayer then
-                        noob(data[i])
-                    end
-                end
-            
-                game.Players.PlayerAdded:connect(function(Player)
-                    noob(Player)
-                end)
-            
-                spawn(function()
-                    placemarker.Anchored = true
-                    placemarker.CanCollide = false
-                    placemarker.Size = Vector3.new(.08,.08,.08)
-                    placemarker.Transparency = 0
-                    makemarker(placemarker, placemarker, Color3.fromRGB(255, 0, 0), .16, 0)
-                end)    
-                
-                mouse.KeyDown:Connect(function(k)
-                    if k ~= "q" then return end
-                    if enabled then
-                        enabled = false
-                        game.StarterGui:SetCore("SendNotification", {
-                Title = "Fish V2 Recode";
-                Text = "Unlocked";
-            })
-                    else
-                        enabled = true 
-                        Plr = getClosestPlayerToCursor()
-                        game.StarterGui:SetCore("SendNotification", {
-                Title = "Fish V2 Recode";
-                Text = "LockedOnTo: "..tostring(Plr.DisplayName);
-            
-            })
                         
+                        self:setValue(self.value .. keyString)
                     end
-                end)
-            
-                    
-                        function getClosestPlayerToCursor()
-                            local closestPlayer
-                            local shortestDistance = math.huge
-                    
-                            for i, v in pairs(game.Players:GetPlayers()) do
-                                if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health ~= 0 and v.Character:FindFirstChild("HumanoidRootPart") then
-                                    local pos = CC:WorldToViewportPoint(v.Character.PrimaryPart.Position)
-                                    local magnitude = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).magnitude
-                                    if magnitude < shortestDistance then
-                                        closestPlayer = v
-                                        shortestDistance = magnitude
-                                    end
-                                end
-                            end
-                            return closestPlayer
-                        end
-            
-                game:GetService"RunService".Stepped:connect(function()
-                    if enabled and Plr.Character and Plr.Character:FindFirstChild("HumanoidRootPart") then
-                        placemarker.CFrame = CFrame.new(Plr.Character.HumanoidRootPart.Position+(Plr.Character.HumanoidRootPart.Velocity*accomidationfactor))
-                    else
-                        placemarker.CFrame = CFrame.new(0, 9999, 0)
-                    end
-                end)
-            
-                local mt = getrawmetatable(game)
-                local old = mt.__namecall
-                setreadonly(mt, false)
-                mt.__namecall = newcclosure(function(...)
-                    local args = {...}
-                    if enabled and getnamecallmethod() == "FireServer" and args[2] == "UpdateMousePos" then
-                        args[3] = Plr.Character.HumanoidRootPart.Position+(Plr.Character.HumanoidRootPart.Velocity*accomidationfactor)
-                        return old(unpack(args))
-                    end
-                    return old(...)
-                end)
+                end
+            end)
+        else
+            -- Clean up input connection
+            if self.inputConnection then
+                self.inputConnection:Disconnect()
+                self.inputConnection = nil
+            end
+        end
+    end
+    
+    -- Click functionality
+    textbox.isInBounds = function(self, mousePos)
+        return isInBounds(mousePos.X, mousePos.Y, 
+            self.background.Position.X, self.background.Position.Y, 
+            self.background.Position.X + self.background.Size.X, 
+            self.background.Position.Y + self.background.Size.Y)
+    end
+    
+    textbox.onClick = function(self)
+        local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+        local mousePos = Vector2.new(mouse.X, mouse.Y)
+        
+        if isInBounds(mousePos.X, mousePos.Y, 
+            self.field.Position.X, self.field.Position.Y, 
+            self.field.Position.X + self.field.Size.X, 
+            self.field.Position.Y + self.field.Size.Y) then
+            self:setFocus(true)
+        else
+            self:setFocus(false)
+        end
+    end
+    
+    textbox.updatePosition = function(self, offset)
+        self.background.Position = self.background.Position + offset
+        self.label.Position = self.label.Position + offset
+        self.field.Position = self.field.Position + offset
+        self.text.Position = self.text.Position + offset
+        self.cursor.Position = self.cursor.Position + offset
+    end
+    
+    -- Add to elements
+    table.insert(self.elements, textbox.background)
+    table.insert(self.elements, textbox.label)
+    table.insert(self.elements, textbox.field)
+    table.insert(self.elements, textbox.text)
+    table.insert(self.elements, textbox.cursor)
+    table.insert(self.elements, textbox)
+    
+    self.elementY = self.elementY + textboxHeight + 5
+    return textbox
+end
+
+function RobloxUI:addLabel(text)
+    local labelHeight = 25
+    local width = self.size.X - (self.padding * 2)
+    local position = Vector2.new(self.position.X + self.padding, self.position.Y + self.elementY)
+    
+    local label = {}
+    
+    -- Label text
+    label.text = Drawing.new("Text")
+    label.text.Text = text
+    label.text.Position = Vector2.new(position.X + 10, position.Y)
+    label.text.Color = self.Colors.Text
+    label.text.Size = 16
+    label.text.Center = false
+    label.text.Outline = false
+    label.text.Visible = self.visible
+    
+    label.setText = function(self, newText)
+        self.text.Text = newText
+    end
+    
+    label.updatePosition = function(self, offset)
+        self.text.Position = self.text.Position + offset
+    end
+    
+    -- Add to elements
+    table.insert(self.elements, label.text)
+    table.insert(self.elements, label)
+    
+    self.elementY = self.elementY + labelHeight
+    return label
+end
+
+function RobloxUI:addSeparator()
+    local separatorHeight = 10
+    local width = self.size.X - (self.padding * 2)
+    local position = Vector2.new(self.position.X + self.padding, self.position.Y + self.elementY)
+    
+    local separator = {}
+    
+    -- Separator line
+    separator.line = Drawing.new("Square")
+    separator.line.Size = Vector2.new(width, 1)
+    separator.line.Position = Vector2.new(position.X, position.Y + 5)
+    separator.line.Color = self.Colors.Border
+    separator.line.Filled = true
+    separator.line.Transparency = 0.7
+    separator.line.Visible = self.visible
+    
+    separator.updatePosition = function(self, offset)
+        self.line.Position = self.line.Position + offset
+    end
+    
+    -- Add to elements
+    table.insert(self.elements, separator.line)
+    table.insert(self.elements, separator)
+    
+    self.elementY = self.elementY + separatorHeight
+    return separator
+end
+
+function RobloxUI:addColorPicker(text, default, callback)
+    local pickerHeight = 30
+    local width = self.size.X - (self.padding * 2)
+    local position = Vector2.new(self.position.X + self.padding, self.position.Y + self.elementY)
+    
+    local colorPicker = {}
+    colorPicker.color = default or Color3.fromRGB(255, 255, 255)
+    colorPicker.callback = callback or function() end
+    colorPicker.open = false
+    
+    -- Color picker background
+    colorPicker.background = Drawing.new("Square")
+    colorPicker.background.Size = Vector2.new(width, pickerHeight)
+    colorPicker.background.Position = position
+    colorPicker.background.Color = self.Colors.Button
+    colorPicker.background.Filled = true
+    colorPicker.background.Transparency = 0.9
+    colorPicker.background.Visible = self.visible
+    
+    -- Color picker text
+    colorPicker.text = Drawing.new("Text")
+    colorPicker.text.Text = text
+    colorPicker.text.Position = Vector2.new(position.X + 10, position.Y + (pickerHeight / 2) - 8)
+    colorPicker.text.Color = self.Colors.Text
+    colorPicker.text.Size = 16
+    colorPicker.text.Center = false
+    colorPicker.text.Outline = false
+    colorPicker.text.Visible = self.visible
+    
+    -- Color preview
+    colorPicker.preview = Drawing.new("Square")
+    colorPicker.preview.Size = Vector2.new(20, 20)
+    colorPicker.preview.Position = Vector2.new(position.X + width - 30, position.Y + 5)
+    colorPicker.preview.Color = colorPicker.color
+    colorPicker.preview.Filled = true
+    colorPicker.preview.Transparency = 1
+    colorPicker.preview.Visible = self.visible
+    
+    -- Color picker elements
+    colorPicker.setColor = function(self, color)
+        self.color = color
+        self.preview.Color = color
+        self.callback(color)
+    end
+    
+    -- Basic pre-defined colors
+    local presetColors = {
+        Color3.fromRGB(255, 0, 0),    -- Red
+        Color3.fromRGB(255, 165, 0),  -- Orange
+        Color3.fromRGB(255, 255, 0),  -- Yellow
+        Color3.fromRGB(0, 255, 0),    -- Green
+        Color3.fromRGB(0, 0, 255),    -- Blue
+        Color3.fromRGB(128, 0, 128),  -- Purple
+        Color3.fromRGB(255, 255, 255),-- White
+        Color3.fromRGB(0, 0, 0)       -- Black
+    }
+    
+    -- Create color palette
+    colorPicker.palette = {}
+    local paletteWidth = width
+    local paletteHeight = 40
+    
+    colorPicker.paletteBackground = Drawing.new("Square")
+    colorPicker.paletteBackground.Size = Vector2.new(paletteWidth, paletteHeight)
+    colorPicker.paletteBackground.Position = Vector2.new(position.X, position.Y + pickerHeight)
+    colorPicker.paletteBackground.Color = self.Colors.Background
+    colorPicker.paletteBackground.Filled = true
+    colorPicker.paletteBackground.Transparency = 0.9
+    colorPicker.paletteBackground.Visible = false
+    
+    local swatchSize = 25
+    local padding = 5
+    local maxPerRow = math.floor((paletteWidth - padding) / (swatchSize + padding))
+    
+    for i, color in ipairs(presetColors) do
+        local row = math.floor((i - 1) / maxPerRow)
+        local col = (i - 1) % maxPerRow
+        
+        local swatch = Drawing.new("Square")
+        swatch.Size = Vector2.new(swatchSize, swatchSize)
+        swatch.Position = Vector2.new(
+            position.X + padding + col * (swatchSize + padding),
+            position.Y + pickerHeight + padding + row * (swatchSize + padding)
+        )
+        swatch.Color = color
+        swatch.Filled = true
+        swatch.Transparency = 1
+        swatch.Visible = false
+        
+        table.insert(colorPicker.palette, {
+            swatch = swatch,
+            color = color
+        })
+        
+        table.insert(self.elements, swatch)
+    end
+    
+    -- Toggle color palette
+    colorPicker.togglePalette = function(self)
+        self.open = not self.open
+        self.paletteBackground.Visible = self.open and self.visible
+        
+        for _, swatch in ipairs(self.palette) do
+            swatch.swatch.Visible = self.open and self.visible
+        end
+    end
+    
+-- Click functionality
+colorPicker.isInBounds = function(self, mousePos)
+    if self.open then
+        return isInBounds(mousePos.X, mousePos.Y, 
+            self.background.Position.X, self.background.Position.Y, 
+            self.background.Position.X + self.background.Size.X, 
+            self.background.Position.Y + self.background.Size.Y + self.paletteBackground.Size.Y)
+    else
+        return isInBounds(mousePos.X, mousePos.Y, 
+            self.background.Position.X, self.background.Position.Y, 
+            self.background.Position.X + self.background.Size.X, 
+            self.background.Position.Y + self.background.Size.Y)
+    end
+end
+
+colorPicker.onClick = function(self)
+    local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+    local mousePos = Vector2.new(mouse.X, mouse.Y)
+    
+    if self.open then
+        -- Check if clicking a color swatch
+        for _, swatch in ipairs(self.palette) do
+            if isInBounds(mousePos.X, mousePos.Y, 
+                swatch.swatch.Position.X, swatch.swatch.Position.Y, 
+                swatch.swatch.Position.X + swatch.swatch.Size.X, 
+                swatch.swatch.Position.Y + swatch.swatch.Size.Y) then
+                self:setColor(swatch.color)
+                self:togglePalette()
+                return
+            end
+        end
+    end
+    
+    -- Toggle palette if clicking the preview
+    if isInBounds(mousePos.X, mousePos.Y, 
+        self.preview.Position.X, self.preview.Position.Y, 
+        self.preview.Position.X + self.preview.Size.X, 
+        self.preview.Position.Y + self.preview.Size.Y) then
+        self:togglePalette()
+    end
+end
+
+colorPicker.updatePosition = function(self, offset)
+    self.background.Position = self.background.Position + offset
+    self.text.Position = self.text.Position + offset
+    self.preview.Position = self.preview.Position + offset
+    self.paletteBackground.Position = self.paletteBackground.Position + offset
+    
+    for _, swatch in ipairs(self.palette) do
+        swatch.swatch.Position = swatch.swatch.Position + offset
+    end
+end
+
+-- Add to elements
+table.insert(self.elements, colorPicker.background)
+table.insert(self.elements, colorPicker.text)
+table.insert(self.elements, colorPicker.preview)
+table.insert(self.elements, colorPicker.paletteBackground)
+table.insert(self.elements, colorPicker)
+
+self.elementY = self.elementY + pickerHeight + 5
+return colorPicker
+end
+
+function RobloxUI:addKeybind(text, default, callback)
+local keybindHeight = 30
+local width = self.size.X - (self.padding * 2)
+local position = Vector2.new(self.position.X + self.padding, self.position.Y + self.elementY)
+
+local keybind = {}
+keybind.key = default or Enum.KeyCode.RightShift
+keybind.listening = false
+keybind.callback = callback or function() end
+
+-- Keybind background
+keybind.background = Drawing.new("Square")
+keybind.background.Size = Vector2.new(width, keybindHeight)
+keybind.background.Position = position
+keybind.background.Color = self.Colors.Button
+keybind.background.Filled = true
+keybind.background.Transparency = 0.9
+keybind.background.Visible = self.visible
+
+-- Keybind text
+keybind.text = Drawing.new("Text")
+keybind.text.Text = text
+keybind.text.Position = Vector2.new(position.X + 10, position.Y + (keybindHeight / 2) - 8)
+keybind.text.Color = self.Colors.Text
+keybind.text.Size = 16
+keybind.text.Center = false
+keybind.text.Outline = false
+keybind.text.Visible = self.visible
+
+-- Keybind button
+keybind.button = Drawing.new("Square")
+keybind.button.Size = Vector2.new(80, keybindHeight - 10)
+keybind.button.Position = Vector2.new(position.X + width - 90, position.Y + 5)
+keybind.button.Color = self.Colors.Button
+keybind.button.Filled = true
+keybind.button.Transparency = 0.8
+keybind.button.Visible = self.visible
+
+-- Keybind value
+keybind.value = Drawing.new("Text")
+keybind.value.Text = keybind.key.Name
+keybind.value.Position = Vector2.new(position.X + width - 50, position.Y + (keybindHeight / 2) - 8)
+keybind.value.Color = self.Colors.Text
+keybind.value.Size = 16
+keybind.value.Center = true
+keybind.value.Outline = false
+keybind.value.Visible = self.visible
+
+-- Set keybind
+keybind.setKey = function(self, key)
+    self.key = key
+    self.value.Text = key.Name
+    self.button.Color = self.Colors.Button
+    self.listening = false
+    self.callback(key)
+end
+
+-- Start listening for key input
+keybind.startListening = function(self)
+    self.listening = true
+    self.value.Text = "..."
+    self.button.Color = self.Colors.SliderFill
+    
+    local connection
+    connection = game:GetService("UserInputService").InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+            self:setKey(input.KeyCode)
+            connection:Disconnect()
+        end
+    end)
+end
+
+-- Click functionality
+keybind.isInBounds = function(self, mousePos)
+    return isInBounds(mousePos.X, mousePos.Y, 
+        self.background.Position.X, self.background.Position.Y, 
+        self.background.Position.X + self.background.Size.X, 
+        self.background.Position.Y + self.background.Size.Y)
+end
+
+keybind.onClick = function(self)
+    local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+    local mousePos = Vector2.new(mouse.X, mouse.Y)
+    
+    if isInBounds(mousePos.X, mousePos.Y, 
+        self.button.Position.X, self.button.Position.Y, 
+        self.button.Position.X + self.button.Size.X, 
+        self.button.Position.Y + self.button.Size.Y) then
+        self:startListening()
+    end
+end
+
+keybind.updatePosition = function(self, offset)
+    self.background.Position = self.background.Position + offset
+    self.text.Position = self.text.Position + offset
+    self.button.Position = self.button.Position + offset
+    self.value.Position = self.value.Position + offset
+end
+
+-- Add to elements
+table.insert(self.elements, keybind.background)
+table.insert(self.elements, keybind.text)
+table.insert(self.elements, keybind.button)
+table.insert(self.elements, keybind.value)
+table.insert(self.elements, keybind)
+
+self.elementY = self.elementY + keybindHeight + 5
+return keybind
+end
+
+function RobloxUI:destroy()
+-- Disconnect all connections
+for _, connection in pairs(self.connections) do
+    connection:Disconnect()
+end
+self.connections = {}
+
+-- Remove all elements
+for _, element in pairs(self.elements) do
+    if element.Remove then
+        element:Remove()
+    end
+end
+self.elements = {}
+end
+
+function RobloxUI:update()
+-- This method can be used to update the UI when needed
+for _, element in pairs(self.elements) do
+    if element.Visible ~= nil then
+        element.Visible = self.visible
+    end
+end
+end
+
+-- Example usage
+function RobloxUI.createExampleUI()
+local ui = RobloxUI.new("Example UI", Vector2.new(200, 200), Vector2.new(350, 400))
+
+ui:addLabel("Welcome to RobloxUI")
+ui:addSeparator()
+
+ui:addButton("Click Me", function()
+    print("Button clicked!")
+end)
+
+ui:addToggle("Toggle Feature", false, function(value)
+    print("Toggle value:", value)
+end)
+
+ui:addSlider("Slider", 0, 100, 50, function(value)
+    print("Slider value:", value)
+end)
+
+ui:addDropdown("Select Option", {"Option 1", "Option 2", "Option 3"}, "Option 1", function(value)
+    print("Selected option:", value)
+end)
+
+ui:addTextbox("Input Text", "Hello", function(value)
+    print("Text input:", value)
+end)
+
+ui:addColorPicker("UI Color", Color3.fromRGB(0, 120, 215), function(color)
+    print("Selected color:", color)
+end)
+
+ui:addKeybind("Toggle UI", Enum.KeyCode.RightShift, function(key)
+    print("Keybind set to:", key.Name)
+end)
+
+return ui
+end
+
+-- Return the library
+return RobloxUI
