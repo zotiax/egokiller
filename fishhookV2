@@ -1211,40 +1211,59 @@ end
 
 -- Example usage
 function RobloxUI.createExampleUI()
-local ui = RobloxUI.new("Example UI", Vector2.new(200, 200), Vector2.new(350, 400))
-
-ui:addLabel("Welcome to RobloxUI")
-ui:addSeparator()
-
-ui:addButton("Click Me", function()
-    print("Button clicked!")
-end)
-
-ui:addToggle("Toggle Feature", false, function(value)
-    print("Toggle value:", value)
-end)
-
-ui:addSlider("Slider", 0, 100, 50, function(value)
-    print("Slider value:", value)
-end)
-
-ui:addDropdown("Select Option", {"Option 1", "Option 2", "Option 3"}, "Option 1", function(value)
-    print("Selected option:", value)
-end)
-
-ui:addTextbox("Input Text", "Hello", function(value)
-    print("Text input:", value)
-end)
-
-ui:addColorPicker("UI Color", Color3.fromRGB(0, 120, 215), function(color)
-    print("Selected color:", color)
-end)
-
-ui:addKeybind("Toggle UI", Enum.KeyCode.RightShift, function(key)
-    print("Keybind set to:", key.Name)
-end)
-
-return ui
+    local ui = RobloxUI.new("Simple Demo", Vector2.new(100, 100), Vector2.new(300, 200))
+    
+    -- Setup input service
+    local UserInputService = game:GetService("UserInputService")
+    local mouse = game.Players.LocalPlayer:GetMouse()
+    
+    -- Track UI state
+    local uiElements = {}
+    
+    -- Add elements
+    ui:addLabel("Welcome to the Demo!")
+    ui:addSeparator()
+    
+    -- Add button with proper tracking
+    local testButton = ui:addButton("Test Button", function()
+        print("Button clicked!")
+    end)
+    table.insert(uiElements, testButton)
+    
+    -- Add toggle with proper tracking
+    local speedToggle = ui:addToggle("Enable Speed", false, function(enabled)
+        if enabled then
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 32
+        else
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        end
+    end)
+    table.insert(uiElements, speedToggle)
+    
+    -- Add slider with proper tracking
+    local jumpPower = ui:addSlider("Jump Power", 50, 200, 50, function(value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = value
+    end)
+    table.insert(uiElements, jumpPower)
+    
+    -- Global input handling
+    UserInputService.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mousePos = Vector2.new(mouse.X, mouse.Y)
+            for _, element in pairs(uiElements) do
+                if element.isInBounds and element:isInBounds(mousePos) then
+                    element:onClick()
+                end
+            end
+        end
+    end)
+    
+    -- Keep UI updated
+    game:GetService("RunService").RenderStepped:Connect(function()
+        ui:update()
+    end)
+    
+    return ui
 end
 
 -- Return the library
